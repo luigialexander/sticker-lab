@@ -4096,16 +4096,7 @@ async function sendWhatsApp(){
     }
 
     alert("No se pudo preparar el pedido.");
-  }catch(error){
-    console.error("No se pudo preparar el pedido:",error);
 
-    if(error?.name === "AbortError"){
-      return;
-    }
-
-    alert("No se pudo preparar el pedido.");
-  }
-}
 
 
 /* ==================================================
