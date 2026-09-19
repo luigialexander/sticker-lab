@@ -1898,9 +1898,45 @@ function saveStorage(){
 
   try{
 
+    /*
+      Las imágenes cargadas desde el computador pueden
+      ser archivos grandes en formato data:image.
+      No las guardamos en localStorage porque tiene un
+      límite pequeño y puede mostrar "No se pudo guardar
+      localmente".
+
+      Las imágenes completas quedan sincronizadas en
+      Supabase. En este dispositivo guardamos una copia
+      ligera para que la tienda no falle por falta de
+      espacio en localStorage.
+    */
+
+    const localProducts =
+      PRODUCTS.map(
+        product =>{
+
+          const copy =
+            {
+              ...product
+            };
+
+          if(
+            typeof copy.image === "string" &&
+            copy.image.startsWith("data:")
+          ){
+
+            delete copy.image;
+
+          }
+
+          return copy;
+
+        }
+      );
+
     localStorage.setItem(
       "landyshop_products",
-      JSON.stringify(PRODUCTS)
+      JSON.stringify(localProducts)
     );
 
     localStorage.setItem(
@@ -1913,13 +1949,22 @@ function saveStorage(){
       JSON.stringify(CONFIG)
     );
 
+    return true;
+
   }catch(error){
 
-    console.error(error);
-
-    alert(
-      "No se pudo guardar localmente."
+    console.error(
+      "No se pudo guardar localmente:",
+      error
     );
+
+    /*
+      El almacenamiento local es solo una copia.
+      La tienda puede continuar usando los datos
+      que están en memoria y sincronizarlos con Supabase.
+    */
+
+    return false;
 
   }
 
