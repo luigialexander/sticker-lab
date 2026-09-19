@@ -1702,6 +1702,19 @@ Descripción
 const ADMIN_PASSWORD =
   "LANDYluigi07";
 
+/* ==================================================
+   SUPABASE — SINCRONIZACIÓN ONLINE
+================================================== */
+
+const SUPABASE_URL =
+  "https://matvtaxvgmiaomwvixuc.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_8zSeS8znbbfk2mt_RgnBQg_0qW-BYK3";
+
+const SUPABASE_PRODUCTS_TABLE =
+  "landyshop_products";
+
 const DEFAULT_CONFIG = {
 
   storeName:"LANDYSHOP",
@@ -1905,7 +1918,237 @@ function saveStorage(){
     console.error(error);
 
     alert(
-      "No se pudo guardar. La imagen puede ser demasiado grande."
+      "No se pudo guardar localmente."
+    );
+
+  }
+
+}
+
+
+/* ==================================================
+   SINCRONIZACIÓN DE PRODUCTOS
+================================================== */
+
+async function supabaseRequest(path,options={}){
+
+  const response =
+    await fetch(
+      SUPABASE_URL +
+      path,
+      {
+        ...options,
+        headers:{
+          "apikey":SUPABASE_KEY,
+          "Authorization":"Bearer " + SUPABASE_KEY,
+          "Content-Type":"application/json",
+          ...(options.headers || {})
+        }
+      }
+    );
+
+  if(!response.ok){
+
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      "Supabase " +
+      response.status +
+      ": " +
+      errorText
+    );
+
+  }
+
+  const text =
+    await response.text();
+
+  return text
+    ? JSON.parse(text)
+    : null;
+
+}
+
+
+function productId(product){
+
+  if(product.id)
+    return String(product.id);
+
+  return "product_" +
+    Date.now() +
+    "_" +
+    Math.random()
+      .toString(36)
+      .slice(2,8);
+
+}
+
+
+async function uploadProductsToCloud(){
+
+  const rows =
+    PRODUCTS.map(
+      product =>({
+
+        id:productId(product),
+
+        data:product,
+
+        updated_at:
+          new Date().toISOString()
+
+      })
+    );
+
+  PRODUCTS =
+    rows.map(
+      row =>{
+
+        row.data.id =
+          row.id;
+
+        return row.data;
+
+      }
+    );
+
+  if(!rows.length)
+    return;
+
+  await supabaseRequest(
+    "/rest/v1/" +
+    SUPABASE_PRODUCTS_TABLE +
+    "?on_conflict=id",
+    {
+      method:"POST",
+      headers:{
+        "Prefer":"resolution=merge-duplicates,return=minimal"
+      },
+      body:JSON.stringify(rows)
+    }
+  );
+
+}
+
+
+async function syncProducts(){
+
+  try{
+
+    const remote =
+      await supabaseRequest(
+        "/rest/v1/" +
+        SUPABASE_PRODUCTS_TABLE +
+        "?select=id,data,updated_at&order=updated_at.asc"
+      );
+
+    const remoteProducts =
+      Array.isArray(remote)
+        ? remote.map(row =>({
+            ...row.data,
+            id:row.id
+          }))
+        : [];
+
+    /*
+      Unimos lo que ya estaba en este dispositivo
+      con lo que existe online. Así no perdemos
+      productos locales al hacer la migración.
+    */
+
+    const merged = [];
+
+    [
+      ...remoteProducts,
+      ...PRODUCTS
+    ].forEach(
+      product =>{
+
+        const id =
+          productId(product);
+
+        product.id =
+          id;
+
+        const existingIndex =
+          merged.findIndex(
+            item => item.id === id
+          );
+
+        if(existingIndex >= 0){
+
+          const existing =
+            merged[existingIndex];
+
+          const existingDate =
+            Number(existing.createdAt || 0);
+
+          const productDate =
+            Number(product.createdAt || 0);
+
+          if(productDate >= existingDate){
+
+            merged[existingIndex] =
+              product;
+
+          }
+
+        }else{
+
+          merged.push(product);
+
+        }
+
+      }
+    );
+
+    PRODUCTS =
+      merged;
+
+    saveStorage();
+
+    await uploadProductsToCloud();
+
+    renderFilters();
+    renderProducts();
+    renderAdmin();
+
+  }catch(error){
+
+    console.error(
+      "No se pudo sincronizar LANDYSHOP:",
+      error
+    );
+
+    /*
+      Si internet/Supabase falla, la tienda
+      sigue funcionando con los datos locales.
+    */
+
+  }
+
+}
+
+
+async function syncAfterChange(){
+
+  saveStorage();
+
+  try{
+
+    await uploadProductsToCloud();
+
+  }catch(error){
+
+    console.error(
+      "No se pudo sincronizar el cambio:",
+      error
+    );
+
+    alert(
+      "Producto guardado en este dispositivo, pero no se pudo sincronizar con internet. Revisa tu conexión."
     );
 
   }
@@ -3861,7 +4104,7 @@ function fileToDataURL(
    ELIMINAR
 ================================================== */
 
-function deleteProduct(index){
+async function deleteProduct(index){
 
   const product =
     PRODUCTS[index];
@@ -3885,7 +4128,7 @@ function deleteProduct(index){
   );
 
 
-  saveStorage();
+  await syncAfterChange();
 
 
   renderFilters();
@@ -4239,6 +4482,8 @@ function saveConfig(){
 
 
   saveStorage();
+
+  syncAfterChange();
 
   applyConfig();
 
