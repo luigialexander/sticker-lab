@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sticker Lab — Tienda</title>
+<style>
+:root{--bg:#090909;--panel:#171717;--panel2:#202020;--line:#343434;--yellow:#ffd83d;--white:#f5f5f2;--muted:#999;--green:#19c86a;--danger:#ff5d5d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
+.header{position:sticky;top:0;z-index:30;background:#0b0b0bf2;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+.nav{max-width:1200px;margin:auto;padding:14px 20px;display:flex;align-items:center;gap:25px}
+.logo{font-size:25px;font-weight:1000;line-height:.8;letter-spacing:-1px}.logo span{color:var(--yellow)}
+.navlinks{display:flex;gap:22px;margin-left:auto}.navlinks a:hover{color:var(--yellow)}
+.admin-open{display:none}
+.hero{max-width:1200px;margin:auto;padding:45px 20px 28px;display:grid;grid-template-columns:1fr .8fr;gap:25px;align-items:center}
+.kicker{color:var(--yellow);font-size:13px;font-weight:1000;letter-spacing:1px}h1{font-size:clamp(43px,7vw,76px);line-height:.9;margin:12px 0}h1 span{color:var(--yellow)}.hero p{color:#bbb;max-width:650px;font-size:17px}
+.cta{display:inline-flex;background:var(--yellow);color:#111;border-radius:999px;padding:14px 20px;font-weight:1000;margin-top:10px}
+.hero-art{min-height:270px;border:1px solid #383838;border-radius:28px;background:radial-gradient(circle at 50% 35%,#3b3b3b,#151515 65%);display:flex;align-items:center;justify-content:center}
+.hero-badge{text-align:center;font-size:34px;font-weight:1000;transform:rotate(-7deg);filter:drop-shadow(0 8px 4px #000)}.hero-badge b{color:var(--yellow)}
+.main{max-width:1200px;margin:auto;padding:10px 20px 60px}.toolbar{display:flex;gap:9px;overflow:auto;padding:12px 0 20px}.filter{border:1px solid var(--line);background:#121212;color:#fff;border-radius:999px;padding:9px 14px;white-space:nowrap}.filter.active,.filter:hover{background:var(--yellow);color:#111;border-color:var(--yellow)}
+.layout{display:grid;grid-template-columns:1fr 330px;gap:18px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px}.card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#f1f0ec}.tag{font-size:9px;font-weight:1000;background:#080808;padding:5px 7px;border-radius:4px;display:inline-block;margin-top:8px}.card h3{font-size:14px;margin:10px 0 5px}
+.size-label{display:block;font-size:10px;color:#aaa;font-weight:800;margin:8px 0 4px}.size-select{width:100%;background:#0d0d0d;color:#fff;border:1px solid #444;border-radius:8px;padding:8px;font-size:11px}
+.price{color:var(--yellow);font-weight:1000;margin-top:7px}.meta{font-size:10px;color:#888;margin-top:3px}.controls{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:6px}
+.qty{display:flex;align-items:center;border:1px solid #444;border-radius:999px;overflow:hidden}.qty button{border:0;background:#222;color:white;width:28px;height:28px}.qty span{width:25px;text-align:center;font-size:12px}.add{border:0;background:var(--yellow);color:#111;font-weight:900;border-radius:999px;padding:8px 12px;font-size:12px}
+.cart{position:sticky;top:82px;align-self:start;background:#111;border:1px solid #333;border-radius:17px;padding:17px}.cart h2{margin:0 0 14px;font-size:20px}.cart-empty{color:#888;padding:20px 0}.cart-row{display:grid;grid-template-columns:48px 1fr auto;gap:9px;align-items:center;border-bottom:1px solid #292929;padding:10px 0}.cart-row img{width:48px;height:48px;border-radius:8px}.cart-name{font-size:12px;font-weight:800}.cart-small{font-size:10px;color:#999;margin-top:3px}.remove{background:none;border:0;color:#999}.summary{padding-top:13px;display:flex;justify-content:space-between}.total{font-size:21px;color:var(--yellow);font-weight:1000}.wa{width:100%;margin-top:15px;border:0;background:var(--green);color:#fff;border-radius:999px;padding:14px;font-weight:1000}.note{font-size:10px;color:#777;text-align:center;margin-top:8px}
+.band{margin-top:35px;background:var(--yellow);color:#111;border-radius:15px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;font-weight:1000;font-size:20px}
+footer{border-top:1px solid #292929;padding:25px 20px;text-align:center;color:#777;font-size:12px}
+
+/* Admin */
+.overlay{display:none;position:fixed;inset:0;background:#000b;z-index:100;overflow:auto}.overlay.open{display:block}
+.admin{max-width:1100px;margin:35px auto;background:#111;border:1px solid #444;border-radius:20px;min-height:calc(100vh - 70px);padding:20px}
+.admin-head{display:flex;align-items:center;justify-content:space-between;gap:15px;border-bottom:1px solid #333;padding-bottom:15px}.admin-head h2{margin:0}.close{border:1px solid #555;background:#222;color:white;border-radius:9px;padding:8px 12px}
+.tabs{display:flex;gap:8px;margin:16px 0}.tab{background:#1c1c1c;color:#fff;border:1px solid #333;padding:10px 14px;border-radius:9px}.tab.active{background:var(--yellow);color:#111}
+.panel{display:none}.panel.active{display:block}.admin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;font-weight:900;color:#ccc}.field input,.field select{background:#0c0c0c;border:1px solid #444;color:white;border-radius:8px;padding:11px}
+.product-admin{display:grid;grid-template-columns:80px 1fr auto;gap:12px;align-items:center;background:#191919;border:1px solid #333;border-radius:12px;padding:10px;margin-bottom:9px}.product-admin img{width:70px;height:70px;object-fit:cover;border-radius:8px;background:#eee}.product-admin h3{margin:0 0 5px;font-size:14px}.admin-actions{display:flex;gap:6px}.edit-btn,.delete-btn{border:0;border-radius:8px;padding:9px 11px;font-weight:900}.edit-btn{background:var(--yellow);color:#111}.delete-btn{background:#322020;color:#ff8b8b}
+.admin-card{background:#191919;border:1px solid #333;border-radius:13px;padding:16px;margin-bottom:14px}.admin-card h3{margin-top:0}.price-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.save{background:var(--green);color:white;border:0;border-radius:9px;padding:12px 17px;font-weight:1000}.secondary{background:#282828;color:white;border:1px solid #444;border-radius:9px;padding:12px 17px;font-weight:900}.admin-footer{display:flex;gap:8px;margin-top:15px;flex-wrap:wrap}
+.upload-preview{width:120px;height:120px;border-radius:10px;object-fit:cover;background:#eee;display:block;margin-top:8px}
+.hint{color:#888;font-size:11px;line-height:1.5}.success{color:#64e69a;font-size:12px;display:none}.success.show{display:block}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.cart{position:static}.grid{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}.navlinks{display:none}.admin{margin:10px;border-radius:15px}.price-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:550px){.grid{grid-template-columns:1fr 1fr}.product-admin{grid-template-columns:60px 1fr}.product-admin img{width:55px;height:55px}.admin-actions{grid-column:1/-1}.admin-grid{grid-template-columns:1fr}.controls{flex-direction:column;align-items:stretch}.add{width:100%}}
+
+    .admin-footer-link{padding:28px 20px 12px;border-top:0;text-align:center}
+    .admin-mini{background:none;border:0;color:#555;font-size:9px;padding:3px 6px;text-decoration:none;cursor:pointer;opacity:.55}
+    .admin-mini:hover{color:#777;opacity:.8}
+</style>
+</head>
+<body>
+<header class="header"><nav class="nav">
+<div class="logo"><span>STICKER</span>LAB</div>
+<div class="navlinks"><a href="#catalogo">Catálogo</a><a href="#como">Cómo comprar</a><a href="#contacto">Contacto</a></div>
+<button class="admin-open" onclick="openAdmin()">⚙ ADMINISTRAR</button>
+</nav></header>
+
+<section class="hero">
+<div><div class="kicker" id="heroKicker">CALCOMANÍAS CON ACTITUD.</div>
+<h1 id="heroTitle">Tu estilo.<br><span>En cada sticker.</span></h1>
+<p id="heroText">Diseños únicos para motos, carros, computadores, cascos, fiestas y todo lo que quieras personalizar.</p>
+<a class="cta" href="#catalogo">VER CATÁLOGO →</a></div>
+<div class="hero-art"><div class="hero-badge">⚡<br>STICKER<br><b>LAB</b><br>✦</div></div>
+</section>
+
+<main class="main" id="catalogo">
+<div class="kicker">EXPLORA</div><h2 style="margin:7px 0 0">Elige tus diseños</h2>
+<div class="toolbar" id="filters"></div>
+<div class="layout"><section class="grid" id="products"></section>
+<aside class="cart" id="cart"><h2>🛒 Tu pedido</h2><div id="cartItems" class="cart-empty">Aún no has agregado stickers.</div><div id="cartBottom" style="display:none">
+<div class="summary"><span>Total</span><span class="total" id="total">$0</span></div>
+<button class="wa" onclick="sendWhatsApp()">ENVIAR PEDIDO POR WHATSAPP ↗</button>
+<div class="note">WhatsApp: <span id="waDisplay">+57 300 469 5179</span></div></div></aside></div>
+<div class="band"><span>¿TIENES UNA IDEA?</span><span>CREA TU PROPIO STICKER →</span></div>
+</main>
+<footer id="como">Selecciona tus diseños · Ajusta cantidades · Envía el pedido por WhatsApp</footer>
+<footer id="contacto">WhatsApp: <span id="footerWa">+57 300 469 5179</span> · Sticker Lab</footer>
+  <footer class="admin-footer-link"><button class="admin-mini" onclick="openAdmin()">Administrar</button></footer>
+
+<div class="overlay" id="adminOverlay">
+<div class="admin">
+<div class="admin-head"><div><div class="kicker">PANEL DE CONTROL</div><h2>Administra tu tienda sin tocar código</h2></div><button class="close" onclick="closeAdmin()">✕ Cerrar</button></div>
+<div class="tabs">
+<button class="tab active" onclick="showTab('productos',this)">🖼️ Productos</button>
+<button class="tab" onclick="showTab('nuevo',this)">➕ Agregar sticker</button>
+<button class="tab" onclick="showTab('config',this)">⚙️ Configuración</button>
+</div>
+
+<section class="panel active" id="panel-productos">
+<div class="admin-card"><h3>Tus stickers</h3><p class="hint">Con Supabase configurado, los productos e imágenes quedan guardados online.</p><p class="hint">Pulsa “Editar” para cambiar nombre, categoría, imagen o precios. Los cambios quedan guardados en este navegador.</p><div id="adminProducts"></div></div>
+</section>
+
+<section class="panel" id="panel-nuevo">
+<div class="admin-card"><h3 id="formTitle">Agregar nuevo sticker</h3>
+<input type="hidden" id="editIndex" value="-1">
+<div class="admin-grid">
+<div class="field"><label>Nombre del sticker</label><input id="pName" placeholder="Ej. Rayo Racing"></div>
+<div class="field"><label>Categoría</label><input id="pCategory" placeholder="Ej. Motos"></div>
+<div class="field"><label>Imagen</label><input id="pImage" type="file" accept="image/*" onchange="previewImage()"><img id="preview" class="upload-preview" style="display:none"></div>
+<div class="field"><label>O imagen desde internet (opcional)</label><input id="pImageUrl" placeholder="https://..."></div>
+</div>
+<h4>Precios por tamaño</h4><div class="price-grid" id="priceInputs"></div>
+<div class="admin-footer"><button class="save" onclick="saveProduct()">💾 Guardar sticker</button><button class="secondary" onclick="resetForm()">Limpiar</button></div>
+<div class="success" id="saveMessage">✓ Sticker guardado correctamente.</div>
+<p class="hint">Puedes subir una imagen desde tu computador. La página la guarda en el navegador para que no necesites editar archivos.</p>
+</div></section>
+
+<section class="panel" id="panel-config">
+<div class="admin-card"><h3>Datos de la tienda</h3>
+<div class="admin-grid">
+<div class="field"><label>Nombre de la tienda</label><input id="storeName"></div>
+<div class="field"><label>WhatsApp (con código de país)</label><input id="storeWa"></div>
+<div class="field"><label>Texto pequeño del inicio</label><input id="cfgKicker"></div>
+<div class="field"><label>Título principal</label><input id="cfgTitle"></div>
+<div class="field" style="grid-column:1/-1"><label>Descripción</label><input id="cfgText"></div>
+</div>
+<div class="admin-footer"><button class="save" onclick="saveConfig()">💾 Guardar configuración</button></div>
+<div class="success" id="configMessage">✓ Configuración guardada.</div>
+</div>
+<div class="admin-card"><h3>Tamaños</h3><p class="hint">Estos son los tamaños que aparecen en todos los stickers. Los precios se editan individualmente en cada producto.</p><div class="price-grid" id="sizeNames"></div>
+<div class="admin-footer"><button class="save" onclick="saveSizes()">💾 Guardar tamaños</button></div></div>
+</section>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+// ===== SUPABASE =====
+const SUPABASE_URL="https://qzthwcxzpplvqrszyoxj.supabase.co";
+const SUPABASE_KEY="sb_publishable_-dYDAEsn3CK9ZDvC7DUkYA_zG2KD2X9";
+const STORAGE_BUCKET="stickers";
+const supabaseReady=SUPABASE_URL.startsWith("https://")&&!SUPABASE_URL.includes("PON_AQUI")&&!SUPABASE_KEY.includes("PON_AQUI");
+const sb=supabaseReady?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null;
+let remoteMode=false;
+async function loadRemoteConfig(){
+ if(!sb)return false;
+ const {data,error}=await sb.from("sticker_config").select("*").eq("id",1).maybeSingle();
+ if(error){console.warn(error);return false}
+ if(data){CONFIG={storeName:data.store_name||DEFAULT_CONFIG.storeName,wa:data.wa||DEFAULT_CONFIG.wa,kicker:data.kicker||DEFAULT_CONFIG.kicker,title:data.title||DEFAULT_CONFIG.title,text:data.text||DEFAULT_CONFIG.text};SIZES=Array.isArray(data.sizes)&&data.sizes.length?data.sizes:DEFAULT_SIZES;return true}
+ return false
+}
+async function loadRemoteProducts(){
+ if(!sb)return false;
+ const {data,error}=await sb.from("sticker_products").select("*").order("created_at",{ascending:true});
+ if(error){console.warn(error);return false}
+ PRODUCTS=(data||[]).map(r=>({id:r.id,name:r.name,category:r.category,image:r.image,prices:r.prices||{}}));
+ return true
+}
+async function uploadStickerImage(file,name){
+ const safe=(name||"sticker").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+ const ext=(file.name.split(".").pop()||"png").toLowerCase();
+ const path=Date.now()+"-"+safe+"."+ext;
+ const {error}=await sb.storage.from(STORAGE_BUCKET).upload(path,file,{cacheControl:"31536000",upsert:false,contentType:file.type||"image/png"});
+ if(error)throw error;
+ return sb.storage.from(STORAGE_BUCKET).getPublicUrl(path).data.publicUrl
+}
+async function saveRemoteProduct(item,id){
+ const payload={name:item.name,category:item.category,image:item.image,prices:item.prices};
+ const result=id?await sb.from("sticker_products").update(payload).eq("id",id).select().single():await sb.from("sticker_products").insert(payload).select().single();
+ if(result.error)throw result.error;
+ return result.data
+}
+const DEFAULT_PRODUCTS = [
+  {
+    "name": "Rayo Urbano",
+    "category": "Motos",
+    "image": "images/rayo_urbano.svg",
+    "prices": {
+      "5 x 5 cm": 4000,
+      "8 x 8 cm": 5500,
+      "10 x 10 cm": 7000,
+      "15 x 15 cm": 10000
+    }
+  },
+  {
+    "name": "Smiley Holográfico",
+    "category": "Holográficas",
+    "image": "images/smiley_holografico.svg",
+    "prices": {
+      "5 x 5 cm": 6000,
+      "8 x 8 cm": 8000,
+      "10 x 10 cm": 10500,
+      "15 x 15 cm": 15000
+    }
+  },
+  {
+    "name": "Calavera King",
+    "category": "Otros",
+    "image": "images/calavera_king.svg",
+    "prices": {
+      "5 x 5 cm": 5000,
+      "8 x 8 cm": 7000,
+      "10 x 10 cm": 9000,
+      "15 x 15 cm": 12500
+    }
+  },
+  {
+    "name": "Mariposa Pop",
+    "category": "Fiestas",
+    "image": "images/mariposa.svg",
+    "prices": {
+      "5 x 5 cm": 5000,
+      "8 x 8 cm": 7000,
+      "10 x 10 cm": 9000,
+      "15 x 15 cm": 12500
+    }
+  },
+  {
+    "name": "Gato Color Pop",
+    "category": "Anime",
+    "image": "images/gato_pop.svg",
+    "prices": {
+      "5 x 5 cm": 5000,
+      "8 x 8 cm": 7000,
+      "10 x 10 cm": 9000,
+      "15 x 15 cm": 12500
+    }
+  },
+  {
+    "name": "Astronauta Neon",
+    "category": "JDM",
+    "image": "images/astronauta.svg",
+    "prices": {
+      "5 x 5 cm": 5500,
+      "8 x 8 cm": 7500,
+      "10 x 10 cm": 9500,
+      "15 x 15 cm": 14000
+    }
+  },
+  {
+    "name": "Fuego",
+    "category": "Motos",
+    "image": "images/fuego.svg",
+    "prices": {
+      "5 x 5 cm": 4000,
+      "8 x 8 cm": 5500,
+      "10 x 10 cm": 7000,
+      "15 x 15 cm": 10000
+    }
+  },
+  {
+    "name": "Lobo Night",
+    "category": "JDM",
+    "image": "images/lobo.svg",
+    "prices": {
+      "5 x 5 cm": 5000,
+      "8 x 8 cm": 7000,
+      "10 x 10 cm": 9000,
+      "15 x 15 cm": 12500
+    }
+  },
+  {
+    "name": "Corona Street",
+    "category": "Negocios",
+    "image": "images/corona.svg",
+    "prices": {
+      "5 x 5 cm": 4500,
+      "8 x 8 cm": 6000,
+      "10 x 10 cm": 8000,
+      "15 x 15 cm": 11000
+    }
+  },
+  {
+    "name": "Happy Party",
+    "category": "Fiestas",
+    "image": "images/party.svg",
+    "prices": {
+      "5 x 5 cm": 4000,
+      "8 x 8 cm": 5500,
+      "10 x 10 cm": 7000,
+      "15 x 15 cm": 10000
+    }
+  },
+  {
+    "name": "Good Vibes",
+    "category": "Frases",
+    "image": "images/good_vibes.svg",
+    "prices": {
+      "5 x 5 cm": 4000,
+      "8 x 8 cm": 5500,
+      "10 x 10 cm": 7000,
+      "15 x 15 cm": 10000
+    }
+  },
+  {
+    "name": "Star Flash",
+    "category": "Holográficas",
+    "image": "images/estrella.svg",
+    "prices": {
+      "5 x 5 cm": 5500,
+      "8 x 8 cm": 7500,
+      "10 x 10 cm": 9500,
+      "15 x 15 cm": 14000
+    }
+  }
+];
+const DEFAULT_SIZES = ["5 x 5 cm","8 x 8 cm","10 x 10 cm","15 x 15 cm"];
+const DEFAULT_CONFIG = {storeName:"Sticker Lab",wa:"573004695179",kicker:"CALCOMANÍAS CON ACTITUD.",title:"Tu estilo.<br>En cada sticker.",text:"Diseños únicos para motos, carros, computadores, cascos, fiestas y todo lo que quieras personalizar."};
+let PRODUCTS = load("sticker_products", DEFAULT_PRODUCTS);
+let SIZES = load("sticker_sizes", DEFAULT_SIZES);
+let CONFIG = load("sticker_config", DEFAULT_CONFIG);
+let active="Todos", cart={};
+
+function load(key, fallback){try{const x=localStorage.getItem(key);return x?JSON.parse(x):JSON.parse(JSON.stringify(fallback))}catch(e){return JSON.parse(JSON.stringify(fallback))}}
+function persist(){localStorage.setItem("sticker_products",JSON.stringify(PRODUCTS));localStorage.setItem("sticker_sizes",JSON.stringify(SIZES));localStorage.setItem("sticker_config",JSON.stringify(CONFIG))}
+function money(n){return "$"+Number(n||0).toLocaleString("es-CO")}
+function categories(){return ["Todos",...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))]}
+function renderFilters(){document.getElementById("filters").innerHTML=categories().map(c=>`<button class="filter ${c===active?"active":""}" onclick="setFilter('${esc(c)}')">${esc(c)}</button>`).join("")}
+function setFilter(c){active=c;renderFilters();renderProducts()}
+function priceFor(p,size){return Number((p.prices||{})[size]||0)}
+function renderProducts(){
+ const list=PRODUCTS.filter(p=>active==="Todos"||p.category===active);
+ document.getElementById("products").innerHTML=list.map((p,i)=>`<article class="card">
+ <img src="${esc(p.image)}" alt="${esc(p.name)}">
+ <span class="tag">${esc(p.category||"OTROS").toUpperCase()}</span><h3>${esc(p.name)}</h3>
+ <label class="size-label">Tamaño</label><select class="size-select" id="size-${i}" onchange="updateCardPrice(${i},this.value)">
+ ${SIZES.map(s=>`<option value="${esc(s)}">${esc(s)} — ${money(priceFor(p,s))}</option>`).join("")}</select>
+ <div class="price" id="card-price-${i}">${money(priceFor(p,SIZES[0]))}</div><div class="meta">Calcomanía · 1 unidad</div>
+ <div class="controls"><div class="qty"><button onclick="changeQty('${esc(p.name)}',-1,document.getElementById('size-${i}').value)">−</button><span>${(() => {let s=SIZES[0],q=cart[cartKey(p.name,s)]?.qty||0;return q})()}</span><button onclick="changeQty('${esc(p.name)}',1,document.getElementById('size-${i}').value)">+</button></div>
+ <button class="add" onclick="add('${esc(p.name)}',document.getElementById('size-${i}').value)">Agregar</button></div></article>`).join("");
+}
+function updateCardPrice(i,size){let list=PRODUCTS.filter(p=>active==="Todos"||p.category===active);document.getElementById("card-price-"+i).textContent=money(priceFor(list[i],size))}
+function cartKey(n,s){return n+"||"+s}
+function add(n,s){changeQty(n,1,s)}
+function changeQty(n,d,s){let p=PRODUCTS.find(x=>x.name===n);if(!p)return;s=s||SIZES[0];let k=cartKey(n,s);cart[k] ||= {...p,qty:0,size:s,unitPrice:priceFor(p,s)};cart[k].unitPrice=priceFor(p,s);cart[k].qty+=d;if(cart[k].qty<=0)delete cart[k];renderProducts();renderCart()}
+function renderCart(){let items=Object.values(cart),box=document.getElementById("cartItems"),bottom=document.getElementById("cartBottom");if(!items.length){box.className="cart-empty";box.innerHTML="Aún no has agregado stickers.";bottom.style.display="none";return}box.className="";box.innerHTML=items.map(p=>`<div class="cart-row"><img src="${esc(p.image)}"><div><div class="cart-name">${esc(p.name)}</div><div class="cart-small">${esc(p.size)} · ${p.qty} × ${money(p.unitPrice)}</div><div class="cart-small" style="color:#ffd83d">${money(p.unitPrice*p.qty)}</div></div><button class="remove" onclick="changeQty('${esc(p.name)}',-${p.qty},'${esc(p.size)}')">✕</button></div>`).join("");let total=items.reduce((s,p)=>s+p.unitPrice*p.qty,0);document.getElementById("total").textContent=money(total);bottom.style.display="block"}
+async function sendWhatsApp(){
+  const items=Object.values(cart);
+  if(!items.length)return;
+
+  const canvas=document.createElement("canvas");
+  const ctx=canvas.getContext("2d");
+  const W=1000,rowH=150,headerH=150,footerH=110;
+  canvas.width=W;
+  canvas.height=headerH+items.length*rowH+footerH;
+
+  ctx.fillStyle="#090909";
+  ctx.fillRect(0,0,W,canvas.height);
+  ctx.fillStyle="#ffd83d";
+  ctx.fillRect(0,0,W,12);
+
+  ctx.fillStyle="#f5f5f2";
+  ctx.font="bold 42px Arial";
+  ctx.fillText("PEDIDO DE STICKERS",45,75);
+  ctx.fillStyle="#999";
+  ctx.font="20px Arial";
+  ctx.fillText(CONFIG.storeName||"Sticker Lab",45,112);
+
+  for(let i=0;i<items.length;i++){
+    const p=items[i],y=headerH+i*rowH;
+    ctx.fillStyle=i%2===0?"#171717":"#202020";
+    ctx.fillRect(30,y,W-60,rowH-15);
+
+    const img=new Image();
+    img.src=p.image;
+    try{
+      await new Promise((resolve,reject)=>{
+        img.onload=resolve; img.onerror=reject;
+      });
+      ctx.drawImage(img,50,y+18,105,105);
+    }catch(e){
+      ctx.fillStyle="#343434";
+      ctx.fillRect(50,y+18,105,105);
+    }
+
+    ctx.fillStyle="#f5f5f2";
+    ctx.font="bold 25px Arial";
+    ctx.fillText(p.name,185,y+45);
+    ctx.fillStyle="#999";
+    ctx.font="20px Arial";
+    ctx.fillText("Medida: "+p.size,185,y+78);
+    ctx.fillText("Cantidad: "+p.qty,185,y+108);
+
+    ctx.fillStyle="#ffd83d";
+    ctx.font="bold 26px Arial";
+    ctx.textAlign="right";
+    ctx.fillText(money(p.unitPrice*p.qty),W-60,y+70);
+    ctx.fillStyle="#999";
+    ctx.font="17px Arial";
+    ctx.fillText("Precio",W-60,y+98);
+    ctx.textAlign="left";
+  }
+
+  const total=items.reduce((s,p)=>s+p.unitPrice*p.qty,0);
+  const fy=headerH+items.length*rowH+25;
+  ctx.fillStyle="#f5f5f2";
+  ctx.font="bold 28px Arial";
+  ctx.fillText("TOTAL",50,fy+45);
+  ctx.fillStyle="#ffd83d";
+  ctx.font="bold 34px Arial";
+  ctx.textAlign="right";
+  ctx.fillText(money(total),W-50,fy+45);
+  ctx.textAlign="left";
+
+  canvas.toBlob(async blob=>{
+    if(!blob)return;
+    const file=new File([blob],"pedido-sticker-lab.png",{type:"image/png"});
+
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file],title:"Pedido Sticker Lab"});
+        return;
+      }catch(e){
+        if(e.name==="AbortError")return;
+      }
+    }
+
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="pedido-sticker-lab.png";
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    alert("El pedido se organizó en una imagen. Adjunta la imagen descargada en WhatsApp.");
+  },"image/png");
+}
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function openAdmin(){
+      const password = prompt("Ingresa la contraseña de administrador:");
+      if(password === null) return;
+      if(password !== "LANDYluigi07"){
+        alert("Contraseña incorrecta.");
+        return;
+      }
+      renderAdmin();
+      document.getElementById("adminOverlay").classList.add("open");
+    }
+function closeAdmin(){document.getElementById("adminOverlay").classList.remove("open")}
+function showTab(id,btn){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));document.getElementById("panel-"+id).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");if(id==="productos")renderAdmin();if(id==="config")renderConfig()}
+function renderAdmin(){document.getElementById("adminProducts").innerHTML=PRODUCTS.length?PRODUCTS.map((p,i)=>`<div class="product-admin"><img src="${esc(p.image)}"><div><h3>${esc(p.name)}</h3><div class="hint">${esc(p.category)} · ${SIZES.map(s=>esc(s)+" "+money(priceFor(p,s))).join(" · ")}</div></div><div class="admin-actions"><button class="edit-btn" onclick="editProduct(${i})">✏️ Editar</button><button class="delete-btn" onclick="deleteProduct(${i})">🗑️</button></div></div>`).join(""):"<p class='hint'>No hay productos todavía.</p>"}
+function buildPriceInputs(prices={}){document.getElementById("priceInputs").innerHTML=SIZES.map(s=>`<div class="field"><label>${esc(s)}</label><input class="price-input" data-size="${esc(s)}" type="number" min="0" step="500" value="${Number(prices[s]||0)}"></div>`).join("")}
+function resetForm(){document.getElementById("editIndex").value="-1";document.getElementById("formTitle").textContent="Agregar nuevo sticker";["pName","pCategory","pImageUrl"].forEach(id=>document.getElementById(id).value="");document.getElementById("pImage").value="";document.getElementById("preview").style.display="none";buildPriceInputs({});document.getElementById("saveMessage").classList.remove("show")}
+function editProduct(i){let p=PRODUCTS[i];showTab("nuevo",document.querySelectorAll(".tab")[1]);document.getElementById("editIndex").value=i;document.getElementById("formTitle").textContent="Editar sticker";document.getElementById("pName").value=p.name;document.getElementById("pCategory").value=p.category;document.getElementById("pImageUrl").value=(p.image||"").startsWith("data:")?"":p.image;document.getElementById("preview").src=p.image;document.getElementById("preview").style.display="block";buildPriceInputs(p.prices||{})}
+function previewImage(){let f=document.getElementById("pImage").files[0];if(!f)return;let r=new FileReader();r.onload=()=>{let im=document.getElementById("preview");im.src=r.result;im.style.display="block"};r.readAsDataURL(f)}
+async function saveProduct(){
+ let idx=Number(document.getElementById("editIndex").value), name=document.getElementById("pName").value.trim(), cat=document.getElementById("pCategory").value.trim();
+ if(!name||!cat){alert("Escribe el nombre y la categoría.");return}
+ let inputs=[...document.querySelectorAll(".price-input")],prices={};inputs.forEach(x=>prices[x.dataset.size]=Number(x.value||0));
+ let image=document.getElementById("pImageUrl").value.trim();
+ let file=document.getElementById("pImage").files[0];
+ try{
+   if(sb){
+     if(file){image=await uploadStickerImage(file,name)}
+     else if(idx>=0) image=PRODUCTS[idx].image;
+     else if(!image) throw new Error("Selecciona una imagen o pega una URL.");
+     const current=idx>=0?PRODUCTS[idx]:null;
+     const saved=await saveRemoteProduct({name,category:cat,image,prices},current?.id);
+     const item={id:saved.id,name:saved.name,category:saved.category,image:saved.image,prices:saved.prices||{}};
+     if(idx>=0) PRODUCTS[idx]=item; else PRODUCTS.push(item);
+     remoteMode=true; persist();
+   }else{
+     if(file){image=await new Promise((resolve,reject)=>{let r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+     if(!image) image=idx>=0?PRODUCTS[idx].image:"";
+     let item={name,category:cat,image,prices}; if(idx>=0) PRODUCTS[idx]=item; else PRODUCTS.push(item); persist();
+   }
+   active="Todos";renderFilters();renderProducts();renderAdmin();document.getElementById("saveMessage").classList.add("show");setTimeout(resetForm,700);
+ }catch(e){console.error(e);alert("No se pudo guardar el sticker: "+(e.message||e))}
+}
+async function deleteProduct(i){
+ if(!confirm("¿Eliminar "+PRODUCTS[i].name+"?"))return;
+ try{if(sb&&PRODUCTS[i].id){const {error}=await sb.from("sticker_products").delete().eq("id",PRODUCTS[i].id);if(error)throw error}
+   PRODUCTS.splice(i,1);persist();renderFilters();renderProducts();renderAdmin();
+ }catch(e){console.error(e);alert("No se pudo eliminar: "+(e.message||e))}
+}
+function renderConfig(){
+ document.getElementById("storeName").value=CONFIG.storeName;document.getElementById("storeWa").value=CONFIG.wa;document.getElementById("cfgKicker").value=CONFIG.kicker;document.getElementById("cfgTitle").value=CONFIG.title;document.getElementById("cfgText").value=CONFIG.text;
+ document.getElementById("sizeNames").innerHTML=SIZES.map((s,i)=>`<div class="field"><label>Tamaño ${i+1}</label><input class="size-name" data-i="${i}" value="${esc(s)}"></div>`).join("")
+}
+async function saveConfig(){
+ CONFIG={storeName:document.getElementById("storeName").value.trim()||"Sticker Lab",wa:document.getElementById("storeWa").value.replace(/\D/g,""),kicker:document.getElementById("cfgKicker").value.trim(),title:document.getElementById("cfgTitle").value.trim(),text:document.getElementById("cfgText").value.trim()};
+ try{if(sb){const {error}=await sb.from("sticker_config").upsert({id:1,store_name:CONFIG.storeName,wa:CONFIG.wa,kicker:CONFIG.kicker,title:CONFIG.title,text:CONFIG.text},{onConflict:"id"});if(error)throw error}persist();applyConfig();document.getElementById("configMessage").classList.add("show")}catch(e){console.error(e);alert("No se pudo guardar la configuración: "+(e.message||e))}
+}
+async function saveSizes(){let ns=[...document.querySelectorAll(".size-name")].map(x=>x.value.trim()).filter(Boolean);if(ns.length<1){alert("Debes tener al menos un tamaño.");return}SIZES=ns;PRODUCTS.forEach(p=>{let oldp=p.prices||{},np={};ns.forEach((s,i)=>{np[s]=Number(oldp[s]||Object.values(oldp)[i]||0)});p.prices=np});
+ try{if(sb){const {error}=await sb.from("sticker_config").upsert({id:1,sizes:SIZES},{onConflict:"id"});if(error)throw error;for(const p of PRODUCTS){if(p.id){const {error:e}=await sb.from("sticker_products").update({prices:p.prices}).eq("id",p.id);if(e)throw e}}}persist();renderFilters();renderProducts();renderConfig();alert("Tamaños guardados. Ahora puedes editar sus precios en cada sticker.")}catch(e){console.error(e);alert("No se pudieron guardar los tamaños: "+(e.message||e))}
+}
+function applyConfig(){document.title=CONFIG.storeName+" — Calcomanías";document.querySelector(".logo").innerHTML="<span>"+esc(CONFIG.storeName.split(" ")[0]||"STICKER")+"</span>"+esc(CONFIG.storeName.split(" ").slice(1).join(" ")||"LAB");document.getElementById("heroKicker").textContent=CONFIG.kicker;document.getElementById("heroTitle").innerHTML=CONFIG.title;document.getElementById("heroText").textContent=CONFIG.text;let wa=CONFIG.wa;document.getElementById("waDisplay").textContent=wa?"+"+wa:"";document.getElementById("footerWa").textContent=wa?"+"+wa:""}
+async function renderInitial(){
+ applyConfig();renderFilters();renderProducts();renderCart();
+ if(sb){
+  const cfg=await loadRemoteConfig(),prods=await loadRemoteProducts();
+  if(cfg||prods){remoteMode=true;applyConfig();renderFilters();renderProducts();renderCart()}
+ }
+}
+renderInitial();
+</script>
+</body></html>
