@@ -2135,6 +2135,14 @@ async function syncProducts(){
 
           if(productDate >= existingDate){
 
+            if(
+              !product.image &&
+              existing.image
+            ){
+              product.image =
+                existing.image;
+            }
+
             merged[existingIndex] =
               product;
 
@@ -4061,6 +4069,201 @@ function fileToDataURL(
 
     }
   );
+
+}
+
+
+/* ==================================================
+   CONVERTIR IMAGEN
+================================================== */
+
+function fileToDataURL(file){
+
+  return new Promise(
+    (resolve,reject)=>{
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        event =>{
+
+          const source =
+            new Image();
+
+          source.onload =
+            () =>{
+
+              const maxSide =
+                1400;
+
+              const scale =
+                Math.min(
+                  1,
+                  maxSide /
+                    Math.max(
+                      source.width,
+                      source.height
+                    )
+                );
+
+              const canvas =
+                document.createElement(
+                  "canvas"
+                );
+
+              canvas.width =
+                Math.max(
+                  1,
+                  Math.round(
+                    source.width * scale
+                  )
+                );
+
+              canvas.height =
+                Math.max(
+                  1,
+                  Math.round(
+                    source.height * scale
+                  )
+                );
+
+              const ctx =
+                canvas.getContext(
+                  "2d"
+                );
+
+              ctx.drawImage(
+                source,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+              );
+
+              resolve(
+                canvas.toDataURL(
+                  "image/jpeg",
+                  .85
+                )
+              );
+
+            };
+
+          source.onerror =
+            reject;
+
+          source.src =
+            event.target.result;
+
+        };
+
+      reader.onerror =
+        reject;
+
+      reader.readAsDataURL(
+        file
+      );
+
+    }
+  );
+
+}
+
+
+/* ==================================================
+   WHATSAPP — PEDIDO COMO IMAGEN
+================================================== */
+
+async function sendWhatsApp(){
+
+  try{
+
+    const items =
+      Object.entries(CART)
+        .filter(
+          ([key,item]) =>
+            item.qty > 0
+        );
+
+    if(!items.length){
+
+      alert(
+        "Agrega al menos un producto al pedido."
+      );
+
+      return;
+
+    }
+
+    const blob =
+      await createOrderImage(
+        items
+      );
+
+    if(!blob){
+
+      alert(
+        "No se pudo crear la imagen del pedido."
+      );
+
+      return;
+
+    }
+
+    const imageUrl =
+      URL.createObjectURL(
+        blob
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.href =
+      imageUrl;
+
+    link.download =
+      "pedido-landy-shop.png";
+
+    document.body.appendChild(
+      link
+    );
+
+    link.click();
+
+    link.remove();
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(
+          imageUrl
+        ),
+      5000
+    );
+
+    const whatsappUrl =
+      "https://wa.me/" +
+      CONFIG.wa;
+
+    window.open(
+      whatsappUrl,
+      "_blank"
+    );
+
+  }catch(error){
+
+    console.error(
+      "No se pudo preparar el pedido:",
+      error
+    );
+
+    alert(
+      "No se pudo preparar la imagen del pedido."
+    );
+
+  }
 
 }
 
