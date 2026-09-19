@@ -1378,20 +1378,7 @@ Imagen desde tu computador
 </div>
 
 
-<div
-  class="field"
-  style="grid-column:1/-1">
 
-<label>
-Imagen desde internet
-</label>
-
-<input
-  id="pImageUrl"
-  placeholder="https://..."
->
-
-</div>
 
 </div>
 
@@ -1442,9 +1429,9 @@ Limpiar
 
 <p class="hint">
 
-La imagen se selecciona directamente desde tu
-computador. No necesitas modificar el código
-para agregar productos.
+La imagen solo se puede subir desde el
+administrador. Los productos aparecerán
+automáticamente en el catálogo.
 
 </p>
 
@@ -1777,11 +1764,7 @@ const DEFAULT_PRODUCTS = [];
    ESTADO
 ================================================== */
 
-let PRODUCTS =
-  loadStorage(
-    "landyshop_products",
-    DEFAULT_PRODUCTS
-  );
+let PRODUCTS = [];
 
 let SIZES =
   loadStorage(
@@ -2048,78 +2031,23 @@ async function syncProducts(){
 
     const remoteProducts =
       Array.isArray(remote)
-        ? remote.map(row =>({
-            ...row.data,
-            id:row.id
-          }))
+        ? remote
+            .map(row =>({
+              ...row.data,
+              id:row.id
+            }))
+            .filter(product =>
+              product &&
+              typeof product.image === "string" &&
+              product.image.trim() !== ""
+            )
         : [];
 
-    /*
-      Unimos lo que ya estaba en este dispositivo
-      con lo que existe online. Así no perdemos
-      productos locales al hacer la migración.
-    */
-
-    const merged = [];
-
-    [
-      ...remoteProducts,
-      ...PRODUCTS
-    ].forEach(
-      product =>{
-
-        const id =
-          productId(product);
-
-        product.id =
-          id;
-
-        const existingIndex =
-          merged.findIndex(
-            item => item.id === id
-          );
-
-        if(existingIndex >= 0){
-
-          const existing =
-            merged[existingIndex];
-
-          const existingDate =
-            Number(existing.createdAt || 0);
-
-          const productDate =
-            Number(product.createdAt || 0);
-
-          if(productDate >= existingDate){
-
-            if(
-              !product.image &&
-              existing.image
-            ){
-              product.image =
-                existing.image;
-            }
-
-            merged[existingIndex] =
-              product;
-
-          }
-
-        }else{
-
-          merged.push(product);
-
-        }
-
-      }
-    );
-
-    PRODUCTS =
-      merged;
+    // El catálogo público muestra únicamente productos
+    // que existen en la base de datos y tienen una imagen.
+    PRODUCTS = remoteProducts;
 
     saveStorage();
-
-    await uploadProductsToCloud();
 
     renderFilters();
     renderProducts();
@@ -3597,9 +3525,7 @@ function resetForm(){
   ).value = "";
 
 
-  document.getElementById(
-    "pImageUrl"
-  ).value = "";
+
 
 
   document.getElementById(
@@ -3711,14 +3637,7 @@ function editProduct(index){
     "";
 
 
-  document.getElementById(
-    "pImageUrl"
-  ).value =
-    product.image?.startsWith(
-      "data:"
-    )
-      ? ""
-      : product.image || "";
+
 
 
   document.getElementById(
@@ -3830,11 +3749,6 @@ async function saveProduct(){
     ).files[0];
 
 
-  const url =
-    document.getElementById(
-      "pImageUrl"
-    ).value.trim();
-
 
   if(!name){
 
@@ -3858,8 +3772,7 @@ async function saveProduct(){
   }
 
 
-  let image =
-    url;
+  let image = "";
 
 
   try{
