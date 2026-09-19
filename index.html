@@ -2822,7 +2822,36 @@ function removeCartItem(key){
    WHATSAPP
 ================================================== */
 
-async function sendWhatsApp(){
+async function loadOrderImage(src){
+
+  return new Promise(
+    (resolve,reject)=>{
+
+      const img =
+        new Image();
+
+      img.crossOrigin =
+        "anonymous";
+
+      img.onload =
+        () => resolve(img);
+
+      img.onerror =
+        () => reject(
+          new Error(
+            "No se pudo cargar una imagen del pedido."
+          )
+        );
+
+      img.src = src;
+
+    }
+  );
+
+}
+
+
+async function createOrderImage(){
 
   const items =
     Object.entries(CART)
@@ -2831,14 +2860,13 @@ async function sendWhatsApp(){
           item.qty > 0
       );
 
-
   if(!items.length){
 
     alert(
       "Agrega al menos un producto."
     );
 
-    return;
+    return null;
 
   }
 
@@ -2866,63 +2894,423 @@ async function sendWhatsApp(){
     );
 
 
-  const orderLines =
-    items.map(
-      ([key,item])=>{
+  const canvas =
+    document.createElement(
+      "canvas"
+    );
 
-        const product =
-          PRODUCTS[
-            item.productIndex
-          ];
+  const width = 1200;
+  const rowHeight = 210;
+  const headerHeight = 250;
+  const footerHeight = 170;
 
-        const size =
-          SIZES.find(
-            s =>
-              s.id === item.sizeId
-          );
+  canvas.width = width;
+  canvas.height =
+    headerHeight +
+    items.length * rowHeight +
+    footerHeight;
 
-        const price =
-          getPrice(
-            product,
-            item.sizeId
-          );
-
-        return "• " +
-          product.name +
-          " | " +
-          (size?.name || "Tamaño") +
-          " | Cant.: " +
-          item.qty +
-          " | " +
-          money(price * item.qty);
-
-      }
-    ).join("\n");
+  const ctx =
+    canvas.getContext(
+      "2d"
+    );
 
 
-  const message =
-    "Hola LANDYSHOP 👋\n\n" +
-    "Quiero realizar este pedido.\n\n" +
-    orderLines +
-    "\n\nTOTAL: " +
-    money(total) +
-    "\n\nPedido enviado desde la tienda online.";
+  /* Fondo */
+
+  ctx.fillStyle =
+    "#111111";
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 
 
-  /*
-    Abrimos WhatsApp directamente al número de LANDYSHOP.
-    No usamos navigator.share() para evitar el menú de contactos.
-  */
+  /* Encabezado */
 
-  const whatsappUrl =
-    "https://wa.me/" +
-    CONFIG.wa +
-    "?text=" +
-    encodeURIComponent(message);
+  ctx.fillStyle =
+    "#FFD400";
+
+  ctx.fillRect(
+    0,
+    0,
+    width,
+    18
+  );
+
+  ctx.fillStyle =
+    "#FFFFFF";
+
+  ctx.font =
+    "bold 58px Arial";
+
+  ctx.fillText(
+    "LANDY SHOP",
+    60,
+    100
+  );
+
+  ctx.fillStyle =
+    "#FFD400";
+
+  ctx.font =
+    "bold 34px Arial";
+
+  ctx.fillText(
+    "PEDIDO",
+    60,
+    155
+  );
+
+  ctx.fillStyle =
+    "#AAAAAA";
+
+  ctx.font =
+    "24px Arial";
+
+  ctx.fillText(
+    "Detalle de tu pedido",
+    60,
+    205
+  );
 
 
-  window.location.href =
-    whatsappUrl;
+  let y =
+    headerHeight;
+
+
+  for(
+    const [key,item]
+    of items
+  ){
+
+    const product =
+      PRODUCTS[
+        item.productIndex
+      ];
+
+    const size =
+      SIZES.find(
+        s =>
+          s.id ===
+          item.sizeId
+      );
+
+    const price =
+      getPrice(
+        product,
+        item.sizeId
+      );
+
+    const rowTotal =
+      price *
+      item.qty;
+
+
+    /* Separador */
+
+    ctx.strokeStyle =
+      "#333333";
+
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      60,
+      y
+    );
+
+    ctx.lineTo(
+      width - 60,
+      y
+    );
+
+    ctx.stroke();
+
+
+    /* Imagen */
+
+    const imageBox = 150;
+
+    try{
+
+      const img =
+        await loadOrderImage(
+          product.image
+        );
+
+      const ratio =
+        Math.min(
+          imageBox / img.width,
+          imageBox / img.height
+        );
+
+      const iw =
+        img.width * ratio;
+
+      const ih =
+        img.height * ratio;
+
+      ctx.drawImage(
+        img,
+        70 +
+          (imageBox - iw) / 2,
+        y + 30 +
+          (imageBox - ih) / 2,
+        iw,
+        ih
+      );
+
+    }catch(error){
+
+      ctx.fillStyle =
+        "#222222";
+
+      ctx.fillRect(
+        70,
+        y + 30,
+        imageBox,
+        imageBox
+      );
+
+    }
+
+
+    /* Nombre */
+
+    ctx.fillStyle =
+      "#FFFFFF";
+
+    ctx.font =
+      "bold 30px Arial";
+
+    ctx.fillText(
+      String(product.name)
+        .slice(0,32),
+      270,
+      y + 70
+    );
+
+
+    /* Tamaño */
+
+    ctx.fillStyle =
+      "#FFD400";
+
+    ctx.font =
+      "26px Arial";
+
+    ctx.fillText(
+      "Tamaño: " +
+        (size?.name || "N/A"),
+      270,
+      y + 115
+    );
+
+
+    /* Cantidad */
+
+    ctx.fillStyle =
+      "#BBBBBB";
+
+    ctx.font =
+      "24px Arial";
+
+    ctx.fillText(
+      "Cantidad: " +
+        item.qty,
+      270,
+      y + 155
+    );
+
+
+    /* Precio */
+
+    ctx.fillStyle =
+      "#FFFFFF";
+
+    ctx.font =
+      "bold 30px Arial";
+
+    ctx.textAlign =
+      "right";
+
+    ctx.fillText(
+      money(rowTotal),
+      width - 70,
+      y + 110
+    );
+
+    ctx.textAlign =
+      "left";
+
+
+    y += rowHeight;
+
+  }
+
+
+  /* Total */
+
+  ctx.fillStyle =
+    "#FFD400";
+
+  ctx.fillRect(
+    60,
+    y + 25,
+    width - 120,
+    90
+  );
+
+  ctx.fillStyle =
+    "#111111";
+
+  ctx.font =
+    "bold 34px Arial";
+
+  ctx.fillText(
+    "TOTAL",
+    90,
+    y + 82
+  );
+
+  ctx.textAlign =
+    "right";
+
+  ctx.font =
+    "bold 40px Arial";
+
+  ctx.fillText(
+    money(total),
+    width - 90,
+    y + 82
+  );
+
+  ctx.textAlign =
+    "left";
+
+
+  return new Promise(
+    resolve =>
+      canvas.toBlob(
+        blob =>
+          resolve(blob),
+        "image/png",
+        1
+      )
+  );
+
+}
+
+
+async function sendWhatsApp(){
+
+  try{
+
+    const blob =
+      await createOrderImage();
+
+    if(!blob)
+      return;
+
+
+    const file =
+      new File(
+        [blob],
+        "pedido-landy-shop.png",
+        {
+          type:"image/png"
+        }
+      );
+
+
+    /*
+      WhatsApp no permite adjuntar una imagen
+      directamente mediante wa.me.
+
+      En celulares compatibles usamos el menú
+      nativo de compartir para enviar SOLO
+      la imagen, sin texto.
+    */
+
+    if(
+      navigator.share &&
+      (
+        !navigator.canShare ||
+        navigator.canShare({
+          files:[file]
+        })
+      )
+    ){
+
+      await navigator.share({
+        files:[file],
+        title:"Pedido LANDY SHOP"
+      });
+
+      return;
+
+    }
+
+
+    /*
+      Si el navegador no permite compartir archivos,
+      descargamos la imagen para que el cliente
+      pueda adjuntarla manualmente en WhatsApp.
+    */
+
+    const imageUrl =
+      URL.createObjectURL(
+        blob
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.href =
+      imageUrl;
+
+    link.download =
+      "pedido-landy-shop.png";
+
+    document.body.appendChild(
+      link
+    );
+
+    link.click();
+
+    link.remove();
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(
+          imageUrl
+        ),
+      1000
+    );
+
+    alert(
+      "La imagen del pedido fue descargada. Adjunta esta imagen en WhatsApp."
+    );
+
+  }catch(error){
+
+    console.error(
+      "No se pudo crear el pedido:",
+      error
+    );
+
+    alert(
+      "No se pudo preparar la imagen del pedido."
+    );
+
+  }
 
 }
 
