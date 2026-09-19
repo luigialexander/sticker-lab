@@ -1769,69 +1769,8 @@ const DEFAULT_SIZES = [
    PRODUCTOS DE EJEMPLO
 ================================================== */
 
-const DEFAULT_PRODUCTS = [
+const DEFAULT_PRODUCTS = [];
 
-  {
-    type:"Calcomanías",
-
-    name:"Rayo Urbano",
-
-    category:"Motos",
-
-    image:
-      "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=700&q=80",
-
-    prices:{
-      "5x5":4000,
-      "8x8":5500,
-      "10x10":7000,
-      "15x15":10000,
-      "20x20":14000
-    }
-
-  },
-
-  {
-    type:"Calcomanías",
-
-    name:"Smiley",
-
-    category:"Holográficas",
-
-    image:
-      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=700&q=80",
-
-    prices:{
-      "5x5":6000,
-      "8x8":8000,
-      "10x10":10500,
-      "15x15":15000,
-      "20x20":19000
-    }
-
-  },
-
-  {
-    type:"Calcomanías",
-
-    name:"Calavera King",
-
-    category:"Otros",
-
-    image:
-      "https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=700&q=80",
-
-    prices:{
-      "5x5":5000,
-      "8x8":7000,
-      "10x10":9000,
-      "15x15":12500,
-      "20x20":16000
-    }
-
-  }
-
-];
 
 
 /* ==================================================
@@ -1862,6 +1801,24 @@ let activeCategory =
 let CART = {};
 
 let zoomLevel = 1;
+
+/* ==================================================
+   LIMPIAR PRODUCTOS DE DEMOSTRACIÓN
+================================================== */
+
+const DEMO_IMAGE_URLS = [
+  "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=700&q=80",
+  "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=700&q=80",
+  "https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=700&q=80"
+];
+
+function removeDemoProducts(){
+  PRODUCTS = PRODUCTS.filter(product =>
+    !DEMO_IMAGE_URLS.includes(product.image)
+  );
+}
+
+removeDemoProducts();
 
 
 /* ==================================================
