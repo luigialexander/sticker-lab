@@ -85,7 +85,7 @@ footer{border-top:1px solid #292929;padding:25px 20px;text-align:center;color:#7
 </div>
 
 <section class="panel active" id="panel-productos">
-<div class="admin-card"><h3>Tus stickers</h3><p class="hint">Con Supabase configurado, los productos e imágenes quedan guardados online.</p><p class="hint">Pulsa “Editar” para cambiar nombre, categoría, imagen o precios. Los cambios quedan guardados en este navegador.</p><div id="adminProducts"></div></div>
+<div class="admin-card"><h3>Tus stickers</h3><p class="hint">Pulsa “Editar” para cambiar nombre, categoría, imagen o precios. Los cambios quedan guardados en este navegador.</p><div id="adminProducts"></div></div>
 </section>
 
 <section class="panel" id="panel-nuevo">
@@ -120,44 +120,7 @@ footer{border-top:1px solid #292929;padding:25px 20px;text-align:center;color:#7
 </section>
 </div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-
-// ===== SUPABASE =====
-const SUPABASE_URL="https://qzthwcxzpplvqrszyoxj.supabase.co";
-const SUPABASE_KEY="sb_publishable_-dYDAEsn3CK9ZDvC7DUkYA_zG2KD2X9";
-const STORAGE_BUCKET="stickers";
-const supabaseReady=SUPABASE_URL.startsWith("https://")&&!SUPABASE_URL.includes("PON_AQUI")&&!SUPABASE_KEY.includes("PON_AQUI");
-const sb=supabaseReady?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null;
-let remoteMode=false;
-async function loadRemoteConfig(){
- if(!sb)return false;
- const {data,error}=await sb.from("sticker_config").select("*").eq("id",1).maybeSingle();
- if(error){console.warn(error);return false}
- if(data){CONFIG={storeName:data.store_name||DEFAULT_CONFIG.storeName,wa:data.wa||DEFAULT_CONFIG.wa,kicker:data.kicker||DEFAULT_CONFIG.kicker,title:data.title||DEFAULT_CONFIG.title,text:data.text||DEFAULT_CONFIG.text};SIZES=Array.isArray(data.sizes)&&data.sizes.length?data.sizes:DEFAULT_SIZES;return true}
- return false
-}
-async function loadRemoteProducts(){
- if(!sb)return false;
- const {data,error}=await sb.from("sticker_products").select("*").order("created_at",{ascending:true});
- if(error){console.warn(error);return false}
- PRODUCTS=(data||[]).map(r=>({id:r.id,name:r.name,category:r.category,image:r.image,prices:r.prices||{}}));
- return true
-}
-async function uploadStickerImage(file,name){
- const safe=(name||"sticker").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
- const ext=(file.name.split(".").pop()||"png").toLowerCase();
- const path=Date.now()+"-"+safe+"."+ext;
- const {error}=await sb.storage.from(STORAGE_BUCKET).upload(path,file,{cacheControl:"31536000",upsert:false,contentType:file.type||"image/png"});
- if(error)throw error;
- return sb.storage.from(STORAGE_BUCKET).getPublicUrl(path).data.publicUrl
-}
-async function saveRemoteProduct(item,id){
- const payload={name:item.name,category:item.category,image:item.image,prices:item.prices};
- const result=id?await sb.from("sticker_products").update(payload).eq("id",id).select().single():await sb.from("sticker_products").insert(payload).select().single();
- if(result.error)throw result.error;
- return result.data
-}
 const DEFAULT_PRODUCTS = [
   {
     "name": "Rayo Urbano",
@@ -431,55 +394,24 @@ function buildPriceInputs(prices={}){document.getElementById("priceInputs").inne
 function resetForm(){document.getElementById("editIndex").value="-1";document.getElementById("formTitle").textContent="Agregar nuevo sticker";["pName","pCategory","pImageUrl"].forEach(id=>document.getElementById(id).value="");document.getElementById("pImage").value="";document.getElementById("preview").style.display="none";buildPriceInputs({});document.getElementById("saveMessage").classList.remove("show")}
 function editProduct(i){let p=PRODUCTS[i];showTab("nuevo",document.querySelectorAll(".tab")[1]);document.getElementById("editIndex").value=i;document.getElementById("formTitle").textContent="Editar sticker";document.getElementById("pName").value=p.name;document.getElementById("pCategory").value=p.category;document.getElementById("pImageUrl").value=(p.image||"").startsWith("data:")?"":p.image;document.getElementById("preview").src=p.image;document.getElementById("preview").style.display="block";buildPriceInputs(p.prices||{})}
 function previewImage(){let f=document.getElementById("pImage").files[0];if(!f)return;let r=new FileReader();r.onload=()=>{let im=document.getElementById("preview");im.src=r.result;im.style.display="block"};r.readAsDataURL(f)}
-async function saveProduct(){
+function saveProduct(){
  let idx=Number(document.getElementById("editIndex").value), name=document.getElementById("pName").value.trim(), cat=document.getElementById("pCategory").value.trim();
  if(!name||!cat){alert("Escribe el nombre y la categoría.");return}
  let inputs=[...document.querySelectorAll(".price-input")],prices={};inputs.forEach(x=>prices[x.dataset.size]=Number(x.value||0));
  let image=document.getElementById("pImageUrl").value.trim();
  let file=document.getElementById("pImage").files[0];
- try{
-   if(sb){
-     if(file){image=await uploadStickerImage(file,name)}
-     else if(idx>=0) image=PRODUCTS[idx].image;
-     else if(!image) throw new Error("Selecciona una imagen o pega una URL.");
-     const current=idx>=0?PRODUCTS[idx]:null;
-     const saved=await saveRemoteProduct({name,category:cat,image,prices},current?.id);
-     const item={id:saved.id,name:saved.name,category:saved.category,image:saved.image,prices:saved.prices||{}};
-     if(idx>=0) PRODUCTS[idx]=item; else PRODUCTS.push(item);
-     remoteMode=true; persist();
-   }else{
-     if(file){image=await new Promise((resolve,reject)=>{let r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
-     if(!image) image=idx>=0?PRODUCTS[idx].image:"";
-     let item={name,category:cat,image,prices}; if(idx>=0) PRODUCTS[idx]=item; else PRODUCTS.push(item); persist();
-   }
-   active="Todos";renderFilters();renderProducts();renderAdmin();document.getElementById("saveMessage").classList.add("show");setTimeout(resetForm,700);
- }catch(e){console.error(e);alert("No se pudo guardar el sticker: "+(e.message||e))}
+ const finish=(img)=>{if(img)image=img;else if(idx>=0)image=PRODUCTS[idx].image;else image="images/rayo_urbano.svg";let item={name,category:cat,image,prices};if(idx>=0)PRODUCTS[idx]=item;else PRODUCTS.push(item);persist();active="Todos";renderFilters();renderProducts();renderAdmin();document.getElementById("saveMessage").classList.add("show");setTimeout(resetForm,700)};
+ if(file){let r=new FileReader();r.onload=()=>finish(r.result);r.readAsDataURL(file)}else finish(image)
 }
-async function deleteProduct(i){
- if(!confirm("¿Eliminar "+PRODUCTS[i].name+"?"))return;
- try{if(sb&&PRODUCTS[i].id){const {error}=await sb.from("sticker_products").delete().eq("id",PRODUCTS[i].id);if(error)throw error}
-   PRODUCTS.splice(i,1);persist();renderFilters();renderProducts();renderAdmin();
- }catch(e){console.error(e);alert("No se pudo eliminar: "+(e.message||e))}
-}
+function deleteProduct(i){if(confirm("¿Eliminar "+PRODUCTS[i].name+"?")){PRODUCTS.splice(i,1);persist();renderFilters();renderProducts();renderAdmin()}}
 function renderConfig(){
  document.getElementById("storeName").value=CONFIG.storeName;document.getElementById("storeWa").value=CONFIG.wa;document.getElementById("cfgKicker").value=CONFIG.kicker;document.getElementById("cfgTitle").value=CONFIG.title;document.getElementById("cfgText").value=CONFIG.text;
  document.getElementById("sizeNames").innerHTML=SIZES.map((s,i)=>`<div class="field"><label>Tamaño ${i+1}</label><input class="size-name" data-i="${i}" value="${esc(s)}"></div>`).join("")
 }
-async function saveConfig(){
- CONFIG={storeName:document.getElementById("storeName").value.trim()||"Sticker Lab",wa:document.getElementById("storeWa").value.replace(/\D/g,""),kicker:document.getElementById("cfgKicker").value.trim(),title:document.getElementById("cfgTitle").value.trim(),text:document.getElementById("cfgText").value.trim()};
- try{if(sb){const {error}=await sb.from("sticker_config").upsert({id:1,store_name:CONFIG.storeName,wa:CONFIG.wa,kicker:CONFIG.kicker,title:CONFIG.title,text:CONFIG.text},{onConflict:"id"});if(error)throw error}persist();applyConfig();document.getElementById("configMessage").classList.add("show")}catch(e){console.error(e);alert("No se pudo guardar la configuración: "+(e.message||e))}
-}
-async function saveSizes(){let ns=[...document.querySelectorAll(".size-name")].map(x=>x.value.trim()).filter(Boolean);if(ns.length<1){alert("Debes tener al menos un tamaño.");return}SIZES=ns;PRODUCTS.forEach(p=>{let oldp=p.prices||{},np={};ns.forEach((s,i)=>{np[s]=Number(oldp[s]||Object.values(oldp)[i]||0)});p.prices=np});
- try{if(sb){const {error}=await sb.from("sticker_config").upsert({id:1,sizes:SIZES},{onConflict:"id"});if(error)throw error;for(const p of PRODUCTS){if(p.id){const {error:e}=await sb.from("sticker_products").update({prices:p.prices}).eq("id",p.id);if(e)throw e}}}persist();renderFilters();renderProducts();renderConfig();alert("Tamaños guardados. Ahora puedes editar sus precios en cada sticker.")}catch(e){console.error(e);alert("No se pudieron guardar los tamaños: "+(e.message||e))}
-}
+function saveConfig(){CONFIG={storeName:document.getElementById("storeName").value.trim()||"Sticker Lab",wa:document.getElementById("storeWa").value.replace(/\D/g,""),kicker:document.getElementById("cfgKicker").value.trim(),title:document.getElementById("cfgTitle").value.trim(),text:document.getElementById("cfgText").value.trim()};persist();applyConfig();document.getElementById("configMessage").classList.add("show")}
+function saveSizes(){let ns=[...document.querySelectorAll(".size-name")].map(x=>x.value.trim()).filter(Boolean);if(ns.length<1){alert("Debes tener al menos un tamaño.");return}SIZES=ns;PRODUCTS.forEach(p=>{let oldp=p.prices||{},np={};ns.forEach((s,i)=>{np[s]=Number(oldp[s]||Object.values(oldp)[i]||0)});p.prices=np});persist();renderFilters();renderProducts();renderConfig();alert("Tamaños guardados. Ahora puedes editar sus precios en cada sticker.")}
 function applyConfig(){document.title=CONFIG.storeName+" — Calcomanías";document.querySelector(".logo").innerHTML="<span>"+esc(CONFIG.storeName.split(" ")[0]||"STICKER")+"</span>"+esc(CONFIG.storeName.split(" ").slice(1).join(" ")||"LAB");document.getElementById("heroKicker").textContent=CONFIG.kicker;document.getElementById("heroTitle").innerHTML=CONFIG.title;document.getElementById("heroText").textContent=CONFIG.text;let wa=CONFIG.wa;document.getElementById("waDisplay").textContent=wa?"+"+wa:"";document.getElementById("footerWa").textContent=wa?"+"+wa:""}
-async function renderInitial(){
- applyConfig();renderFilters();renderProducts();renderCart();
- if(sb){
-  const cfg=await loadRemoteConfig(),prods=await loadRemoteProducts();
-  if(cfg||prods){remoteMode=true;applyConfig();renderFilters();renderProducts();renderCart()}
- }
-}
+function renderInitial(){applyConfig();renderFilters();renderProducts();renderCart()}
 renderInitial();
 </script>
 </body></html>
