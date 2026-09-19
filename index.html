@@ -4022,7 +4022,7 @@ async function saveProduct(){
     }
 
 
-    saveStorage();
+    await syncAfterChange();
 
 
     activeCategory =
@@ -4717,6 +4717,8 @@ function init(){
 
 
 init();
+
+syncProducts();
 
 </script>
 
