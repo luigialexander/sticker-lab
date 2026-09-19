@@ -4021,84 +4021,87 @@ async function sendWhatsApp(){
         );
 
     if(!items.length){
-
-      alert(
-        "Agrega al menos un producto al pedido."
-      );
-
+      alert("Agrega al menos un producto al pedido.");
       return;
-
     }
 
-    const blob =
-      await createOrderImage(
-        items
-      );
+    const blob = await createOrderImage(items);
 
     if(!blob){
-
-      alert(
-        "No se pudo crear la imagen del pedido."
-      );
-
+      alert("No se pudo crear la imagen del pedido.");
       return;
-
     }
 
-    const imageUrl =
-      URL.createObjectURL(
-        blob
-      );
-
-    const link =
-      document.createElement(
-        "a"
-      );
-
-    link.href =
-      imageUrl;
-
-    link.download =
-      "pedido-landy-shop.png";
-
-    document.body.appendChild(
-      link
+    const file = new File(
+      [blob],
+      "pedido-landy-shop.png",
+      { type:"image/png" }
     );
 
-    link.click();
+    const whatsappUrl = "https://wa.me/" + CONFIG.wa;
 
-    link.remove();
+    /*
+      En celulares compatibles, WhatsApp puede recibir
+      directamente la imagen mediante el menú compartir.
+      El usuario solo tendrá que pulsar ENVIAR.
+    */
+    if(
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({files:[file]})
+    ){
+      await navigator.share({
+        files:[file],
+        title:"Pedido LANDY SHOP",
+        text:"Pedido de LANDY SHOP"
+      });
+      return;
+    }
 
-    setTimeout(
-      () =>
-        URL.revokeObjectURL(
-          imageUrl
-        ),
-      5000
-    );
+    /*
+      En computador, los navegadores no permiten que una página
+      adjunte automáticamente un archivo dentro de WhatsApp Web.
+      Copiamos la imagen al portapapeles y abrimos el chat para
+      que pueda pegarse con Ctrl+V y luego pulsar Enviar.
+    */
+    if(
+      navigator.clipboard &&
+      window.ClipboardItem
+    ){
+      try{
+        const item = new ClipboardItem({
+          "image/png": blob
+        });
 
-    const whatsappUrl =
-      "https://wa.me/" +
-      CONFIG.wa;
+        await navigator.clipboard.write([item]);
 
-    window.open(
-      whatsappUrl,
-      "_blank"
+        window.open(whatsappUrl,"_blank");
+
+        alert(
+          "La imagen del pedido quedó copiada. En WhatsApp, pega con Ctrl+V y luego pulsa Enviar."
+        );
+        return;
+      }catch(clipboardError){
+        console.warn("No se pudo copiar la imagen al portapapeles:",clipboardError);
+      }
+    }
+
+    /* Último recurso: abrir WhatsApp sin descargar nada. */
+    window.open(whatsappUrl,"_blank");
+
+    alert(
+      "WhatsApp se abrió. Este navegador no permite adjuntar la imagen automáticamente; tendrás que pegarla o adjuntarla manualmente."
     );
 
   }catch(error){
+    console.error("No se pudo preparar el pedido:",error);
 
-    console.error(
-      "No se pudo preparar el pedido:",
-      error
-    );
+    if(error?.name === "AbortError"){
+      return;
+    }
 
-    alert(
-      "No se pudo preparar la imagen del pedido."
-    );
-
+    alert("No se pudo preparar el pedido.");
   }
-
 }
 
 
