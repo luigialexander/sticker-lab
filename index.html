@@ -2644,23 +2644,31 @@ async function sendWhatsApp(){
             item.sizeId
           );
 
-        return
-          \`• \${product.name} | \${size?.name || "Tamaño"} | Cant.: \${item.qty} | \${money(price * item.qty)}\`;
+        return "• " +
+          product.name +
+          " | " +
+          (size?.name || "Tamaño") +
+          " | Cant.: " +
+          item.qty +
+          " | " +
+          money(price * item.qty);
 
       }
     ).join("\n");
 
 
   const message =
-    \`Hola LANDYSHOP 👋\n\nQuiero realizar este pedido.\n\n\${orderLines}\n\nTOTAL: \${money(total)}\n\nPedido enviado desde la tienda online.\`;
+    "Hola LANDYSHOP 👋\n\n" +
+    "Quiero realizar este pedido.\n\n" +
+    orderLines +
+    "\n\nTOTAL: " +
+    money(total) +
+    "\n\nPedido enviado desde la tienda online.";
 
 
   /*
-    IMPORTANTE:
-    No usamos navigator.share(), porque ese método abre
-    el menú de compartir del teléfono y permite elegir
-    cualquier contacto. Aquí WhatsApp se abre directamente
-    con el número de LANDYSHOP configurado en CONFIG.wa.
+    Abrimos WhatsApp directamente al número de LANDYSHOP.
+    No usamos navigator.share() para evitar el menú de contactos.
   */
 
   const whatsappUrl =
