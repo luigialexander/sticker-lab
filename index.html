@@ -140,8 +140,21 @@ async function loadRemoteConfig(){
 async function loadRemoteProducts(){
  if(!sb)return false;
  const {data,error}=await sb.from("sticker_products").select("*").order("created_at",{ascending:true});
- if(error){console.warn(error);return false}
- PRODUCTS=(data||[]).map(r=>({id:r.id,name:r.name,category:r.category,image:r.image,prices:r.prices||{}}));
+if(error){
+  console.error("Error cargando productos desde Supabase:",error);
+  PRODUCTS=[];
+  return false;
+}
+
+PRODUCTS=(data||[])
+  .map(r=>({
+    id:r.id,
+    name:r.name,
+    category:r.category,
+    image:r.image,
+    prices:r.prices||{}
+  }))
+  .filter(p=>p.image);
  return true
 }
 async function uploadStickerImage(file,name){
@@ -159,142 +172,10 @@ async function saveRemoteProduct(item,id){
  return result.data
 }
 const DEFAULT_PRODUCTS = [
-  {
-    "name": "Rayo Urbano",
-    "category": "Motos",
-    "image": "images/rayo_urbano.svg",
-    "prices": {
-      "5 x 5 cm": 4000,
-      "8 x 8 cm": 5500,
-      "10 x 10 cm": 7000,
-      "15 x 15 cm": 10000
-    }
-  },
-  {
-    "name": "Smiley Holográfico",
-    "category": "Holográficas",
-    "image": "images/smiley_holografico.svg",
-    "prices": {
-      "5 x 5 cm": 6000,
-      "8 x 8 cm": 8000,
-      "10 x 10 cm": 10500,
-      "15 x 15 cm": 15000
-    }
-  },
-  {
-    "name": "Calavera King",
-    "category": "Otros",
-    "image": "images/calavera_king.svg",
-    "prices": {
-      "5 x 5 cm": 5000,
-      "8 x 8 cm": 7000,
-      "10 x 10 cm": 9000,
-      "15 x 15 cm": 12500
-    }
-  },
-  {
-    "name": "Mariposa Pop",
-    "category": "Fiestas",
-    "image": "images/mariposa.svg",
-    "prices": {
-      "5 x 5 cm": 5000,
-      "8 x 8 cm": 7000,
-      "10 x 10 cm": 9000,
-      "15 x 15 cm": 12500
-    }
-  },
-  {
-    "name": "Gato Color Pop",
-    "category": "Anime",
-    "image": "images/gato_pop.svg",
-    "prices": {
-      "5 x 5 cm": 5000,
-      "8 x 8 cm": 7000,
-      "10 x 10 cm": 9000,
-      "15 x 15 cm": 12500
-    }
-  },
-  {
-    "name": "Astronauta Neon",
-    "category": "JDM",
-    "image": "images/astronauta.svg",
-    "prices": {
-      "5 x 5 cm": 5500,
-      "8 x 8 cm": 7500,
-      "10 x 10 cm": 9500,
-      "15 x 15 cm": 14000
-    }
-  },
-  {
-    "name": "Fuego",
-    "category": "Motos",
-    "image": "images/fuego.svg",
-    "prices": {
-      "5 x 5 cm": 4000,
-      "8 x 8 cm": 5500,
-      "10 x 10 cm": 7000,
-      "15 x 15 cm": 10000
-    }
-  },
-  {
-    "name": "Lobo Night",
-    "category": "JDM",
-    "image": "images/lobo.svg",
-    "prices": {
-      "5 x 5 cm": 5000,
-      "8 x 8 cm": 7000,
-      "10 x 10 cm": 9000,
-      "15 x 15 cm": 12500
-    }
-  },
-  {
-    "name": "Corona Street",
-    "category": "Negocios",
-    "image": "images/corona.svg",
-    "prices": {
-      "5 x 5 cm": 4500,
-      "8 x 8 cm": 6000,
-      "10 x 10 cm": 8000,
-      "15 x 15 cm": 11000
-    }
-  },
-  {
-    "name": "Happy Party",
-    "category": "Fiestas",
-    "image": "images/party.svg",
-    "prices": {
-      "5 x 5 cm": 4000,
-      "8 x 8 cm": 5500,
-      "10 x 10 cm": 7000,
-      "15 x 15 cm": 10000
-    }
-  },
-  {
-    "name": "Good Vibes",
-    "category": "Frases",
-    "image": "images/good_vibes.svg",
-    "prices": {
-      "5 x 5 cm": 4000,
-      "8 x 8 cm": 5500,
-      "10 x 10 cm": 7000,
-      "15 x 15 cm": 10000
-    }
-  },
-  {
-    "name": "Star Flash",
-    "category": "Holográficas",
-    "image": "images/estrella.svg",
-    "prices": {
-      "5 x 5 cm": 5500,
-      "8 x 8 cm": 7500,
-      "10 x 10 cm": 9500,
-      "15 x 15 cm": 14000
-    }
-  }
-];
+ const DEFAULT_PRODUCTS = [];
 const DEFAULT_SIZES = ["5 x 5 cm","8 x 8 cm","10 x 10 cm","15 x 15 cm"];
 const DEFAULT_CONFIG = {storeName:"Sticker Lab",wa:"573004695179",kicker:"CALCOMANÍAS CON ACTITUD.",title:"Tu estilo.<br>En cada sticker.",text:"Diseños únicos para motos, carros, computadores, cascos, fiestas y todo lo que quieras personalizar."};
-let PRODUCTS = load("sticker_products", DEFAULT_PRODUCTS);
+let PRODUCTS = [];
 let SIZES = load("sticker_sizes", DEFAULT_SIZES);
 let CONFIG = load("sticker_config", DEFAULT_CONFIG);
 let active="Todos", cart={};
