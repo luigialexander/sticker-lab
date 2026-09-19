@@ -4032,37 +4032,15 @@ async function sendWhatsApp(){
       return;
     }
 
-    const file = new File(
-      [blob],
-      "pedido-landy-shop.png",
-      { type:"image/png" }
-    );
-
-    const whatsappUrl = "https://wa.me/" + CONFIG.wa;
-
     /*
-      En celulares compatibles, WhatsApp puede recibir
-      directamente la imagen mediante el menú compartir.
-      El usuario solo tendrá que pulsar ENVIAR.
-    */
-    if(
-      navigator.share &&
-      navigator.canShare &&
-      navigator.canShare({files:[file]})
-    ){
-      await navigator.share({
-        files:[file],
-        title:"Pedido LANDY SHOP",
-        text:"Pedido de LANDY SHOP"
-      });
-      return;
-    }
+      IMPORTANTE:
+      No usamos navigator.share(), porque en algunos celulares
+      y computadores abre el selector "Compartir con..." y permite
+      escoger entre varias aplicaciones.
 
-    /*
-      En computador, los navegadores no permiten que una página
-      adjunte automáticamente un archivo dentro de WhatsApp Web.
-      Copiamos la imagen al portapapeles y abrimos el chat para
-      que pueda pegarse con Ctrl+V y luego pulsar Enviar.
+      En su lugar, copiamos directamente la imagen al portapapeles
+      y abrimos directamente el WhatsApp de LANDY SHOP.
+      En WhatsApp solo hay que pegar la imagen y pulsar ENVIAR.
     */
     if(
       navigator.clipboard &&
@@ -4075,24 +4053,49 @@ async function sendWhatsApp(){
 
         await navigator.clipboard.write([item]);
 
+        const whatsappUrl =
+          "https://wa.me/" + CONFIG.wa;
+
         window.open(whatsappUrl,"_blank");
 
         alert(
-          "La imagen del pedido quedó copiada. En WhatsApp, pega con Ctrl+V y luego pulsa Enviar."
+          "WhatsApp de LANDY SHOP se abrió. La imagen ya está copiada: presiona Ctrl+V y luego Enviar."
         );
         return;
+
       }catch(clipboardError){
-        console.warn("No se pudo copiar la imagen al portapapeles:",clipboardError);
+        console.warn(
+          "No se pudo copiar la imagen al portapapeles:",
+          clipboardError
+        );
       }
     }
 
-    /* Último recurso: abrir WhatsApp sin descargar nada. */
-    window.open(whatsappUrl,"_blank");
-
-    alert(
-      "WhatsApp se abrió. Este navegador no permite adjuntar la imagen automáticamente; tendrás que pegarla o adjuntarla manualmente."
+    /*
+      Si el navegador no permite copiar imágenes al portapapeles,
+      abrimos igualmente el WhatsApp de LANDY SHOP.
+    */
+    window.open(
+      "https://wa.me/" + CONFIG.wa,
+      "_blank"
     );
 
+    alert(
+      "WhatsApp de LANDY SHOP se abrió. Este navegador no permite copiar la imagen automáticamente; tendrás que adjuntarla manualmente."
+    );
+
+  }catch(error){
+
+    console.error(
+      "No se pudo preparar el pedido:",
+      error
+    );
+
+    if(error?.name === "AbortError"){
+      return;
+    }
+
+    alert("No se pudo preparar el pedido.");
   }catch(error){
     console.error("No se pudo preparar el pedido:",error);
 
